@@ -153,3 +153,35 @@ class ModelHooks(torch.nn.Module):
                     scaled_loss.backward()
         else:
             loss.backward()
+
+    def transfer_batch_to_device(self, batch: Any, device: torch.device) -> Any:
+        if callable(getattr(batch, 'to', None)):
+            return batch.to(device)
+
+        # when list
+        if isinstance(batch, list):
+            for i, x in enumerate(batch):
+                batch[i] = self.transfer_batch_to_device(x, device)
+            return batch
+
+        # when tuple
+        if isinstance(batch, tuple):
+            # when namedtuple
+            if hasattr(batch, '_fields'):
+                elem_type = type(batch)
+                return elem_type(*(self.transfer_batch_to_device(x, device) for x in batch))
+            else:
+                batch = list(batch)
+                for i, x in enumerate(batch):
+                    batch[i] = self.transfer_batch_to_device(x, device)
+                return tuple(batch)
+
+        # when dict
+        if isinstance(batch, dict):
+            for k, v in batch.items():
+                batch[k] = self.transfer_batch_to_device(v, device)
+
+            return batch
+
+        # nothing matches, return the value as is without transform
+        return batch
