@@ -160,49 +160,48 @@ def test_running_test_no_val(tmpdir):
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="test requires GPU machine")
 def test_single_gpu_batch_parse():
-    model = EvalModelTemplate(tutils.get_default_hparams())
-    device = torch.device('cuda', 0)
+    trainer = Trainer()
 
     # batch is just a tensor
     batch = torch.rand(2, 3)
-    batch = model.transfer_batch_to_device(batch, device)
-    assert batch.device.index == device.index and batch.type() == 'torch.cuda.FloatTensor'
+    batch = trainer.transfer_batch_to_gpu(batch, 0)
+    assert batch.device.index == 0 and batch.type() == 'torch.cuda.FloatTensor'
 
     # tensor list
     batch = [torch.rand(2, 3), torch.rand(2, 3)]
-    batch = model.transfer_batch_to_device(batch, device)
-    assert batch[0].device.index == device.index and batch[0].type() == 'torch.cuda.FloatTensor'
-    assert batch[1].device.index == device.index and batch[1].type() == 'torch.cuda.FloatTensor'
+    batch = trainer.transfer_batch_to_gpu(batch, 0)
+    assert batch[0].device.index == 0 and batch[0].type() == 'torch.cuda.FloatTensor'
+    assert batch[1].device.index == 0 and batch[1].type() == 'torch.cuda.FloatTensor'
 
     # tensor list of lists
     batch = [[torch.rand(2, 3), torch.rand(2, 3)]]
-    batch = model.transfer_batch_to_device(batch, device)
-    assert batch[0][0].device.index == device.index and batch[0][0].type() == 'torch.cuda.FloatTensor'
-    assert batch[0][1].device.index == device.index and batch[0][1].type() == 'torch.cuda.FloatTensor'
+    batch = trainer.transfer_batch_to_gpu(batch, 0)
+    assert batch[0][0].device.index == 0 and batch[0][0].type() == 'torch.cuda.FloatTensor'
+    assert batch[0][1].device.index == 0 and batch[0][1].type() == 'torch.cuda.FloatTensor'
 
     # tensor dict
     batch = [{'a': torch.rand(2, 3), 'b': torch.rand(2, 3)}]
-    batch = model.transfer_batch_to_device(batch, device)
-    assert batch[0]['a'].device.index == device.index and batch[0]['a'].type() == 'torch.cuda.FloatTensor'
-    assert batch[0]['b'].device.index == device.index and batch[0]['b'].type() == 'torch.cuda.FloatTensor'
+    batch = trainer.transfer_batch_to_gpu(batch, 0)
+    assert batch[0]['a'].device.index == 0 and batch[0]['a'].type() == 'torch.cuda.FloatTensor'
+    assert batch[0]['b'].device.index == 0 and batch[0]['b'].type() == 'torch.cuda.FloatTensor'
 
     # tuple of tensor list and list of tensor dict
     batch = ([torch.rand(2, 3) for _ in range(2)],
              [{'a': torch.rand(2, 3), 'b': torch.rand(2, 3)} for _ in range(2)])
-    batch = model.transfer_batch_to_device(batch, device)
-    assert batch[0][0].device.index == device.index and batch[0][0].type() == 'torch.cuda.FloatTensor'
+    batch = trainer.transfer_batch_to_gpu(batch, 0)
+    assert batch[0][0].device.index == 0 and batch[0][0].type() == 'torch.cuda.FloatTensor'
 
-    assert batch[1][0]['a'].device.index == device.index
+    assert batch[1][0]['a'].device.index == 0
     assert batch[1][0]['a'].type() == 'torch.cuda.FloatTensor'
 
-    assert batch[1][0]['b'].device.index == device.index
+    assert batch[1][0]['b'].device.index == 0
     assert batch[1][0]['b'].type() == 'torch.cuda.FloatTensor'
 
     # namedtuple of tensor
     BatchType = namedtuple('BatchType', ['a', 'b'])
     batch = [BatchType(a=torch.rand(2, 3), b=torch.rand(2, 3)) for _ in range(2)]
-    batch = model.transfer_batch_to_device(batch, device)
-    assert batch[0].a.device.index == device.index
+    batch = trainer.transfer_batch_to_gpu(batch, 0)
+    assert batch[0].a.device.index == 0
     assert batch[0].a.type() == 'torch.cuda.FloatTensor'
 
 

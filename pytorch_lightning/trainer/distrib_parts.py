@@ -435,11 +435,48 @@ class TrainerDPMixin(ABC):
 
     def transfer_batch_to_tpu(self, batch: Any):
         device = xm.xla_device() if XLA_AVAILABLE else torch.device('cpu')
-        return self.get_model().transfer_batch_to_device(batch, device)
+        return self.transfer_data_to_device(batch, device)
 
     def transfer_batch_to_gpu(self, batch: Any, gpu_id: int):
         device = torch.device('cuda', gpu_id)
-        return self.get_model().transfer_batch_to_device(batch, device)
+        return self.transfer_data_to_device(batch, device)
+
+    def transfer_data_to_device(self, batch: Any, device: torch.device):
+        if callable(getattr(batch, 'to', None)):
+            return batch.to(device)
+
+        # when list
+        if isinstance(batch, list):
+            for i, x in enumerate(batch):
+                batch[i] = self.transfer_data_to_device(x, device)
+            return batch
+
+        # when tuple
+        if isinstance(batch, tuple):
+            # when namedtuple
+            if hasattr(batch, '_fields'):
+                elem_type = type(batch)
+                return elem_type(*(self.transfer_data_to_device(x, device) for x in batch))
+            else:
+                batch = list(batch)
+                for i, x in enumerate(batch):
+                    batch[i] = self.transfer_data_to_device(x, device)
+                return tuple(batch)
+
+        # when dict
+        if isinstance(batch, dict):
+            for k, v in batch.items():
+                batch[k] = self.transfer_data_to_device(v, device)
+
+            return batch
+
+        # check if the hook can move the data
+        model = self.get_model()
+        if model is not None and self.is_overridden(model, 'transfer_batch_to_device'):
+            batch = model.transfer_batch_to_device(batch, device)
+
+        # nothing matches, return the value as is without transform
+        return batch
 
     def single_gpu_train(self, model):
         model.cuda(self.root_gpu)
