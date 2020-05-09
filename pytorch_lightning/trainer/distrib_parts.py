@@ -435,20 +435,20 @@ class TrainerDPMixin(ABC):
 
     def transfer_batch_to_tpu(self, batch: Any):
         device = xm.xla_device() if XLA_AVAILABLE else torch.device('cpu')
-        return self.transfer_data_to_device(batch, device)
+        return self.__transfer_data_to_device(batch, device)
 
     def transfer_batch_to_gpu(self, batch: Any, gpu_id: int):
         device = torch.device('cuda', gpu_id)
-        return self.transfer_data_to_device(batch, device)
+        return self.__transfer_data_to_device(batch, device)
 
-    def transfer_data_to_device(self, batch: Any, device: torch.device):
+    def __transfer_data_to_device(self, batch: Any, device: torch.device):
         if callable(getattr(batch, 'to', None)):
             return batch.to(device)
 
         # when list
         if isinstance(batch, list):
             for i, x in enumerate(batch):
-                batch[i] = self.transfer_data_to_device(x, device)
+                batch[i] = self.__transfer_data_to_device(x, device)
             return batch
 
         # when tuple
@@ -456,17 +456,17 @@ class TrainerDPMixin(ABC):
             # when namedtuple
             if hasattr(batch, '_fields'):
                 elem_type = type(batch)
-                return elem_type(*(self.transfer_data_to_device(x, device) for x in batch))
+                return elem_type(*(self.__transfer_data_to_device(x, device) for x in batch))
             else:
                 batch = list(batch)
                 for i, x in enumerate(batch):
-                    batch[i] = self.transfer_data_to_device(x, device)
+                    batch[i] = self.__transfer_data_to_device(x, device)
                 return tuple(batch)
 
         # when dict
         if isinstance(batch, dict):
             for k, v in batch.items():
-                batch[k] = self.transfer_data_to_device(v, device)
+                batch[k] = self.__transfer_data_to_device(v, device)
 
             return batch
 
