@@ -470,9 +470,9 @@ class TrainerDPMixin(ABC):
 
             return batch
 
-        # check if the hook can move the data
+        # check if the model hook can move the data
         model = self.get_model()
-        if model is not None and self.is_overridden(model, 'transfer_batch_to_device'):
+        if model is not None and self.is_overridden('transfer_batch_to_device', model):
             batch = model.transfer_batch_to_device(batch, device)
 
         # nothing matches, return the value as is without transform
