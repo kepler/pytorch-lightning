@@ -54,6 +54,8 @@ class LightningTemplateModel(LightningModule):
         self.c_d2 = nn.Linear(in_features=self.hparams.hidden_dim,
                               out_features=self.hparams.out_features)
 
+        self.example_input_array = torch.zeros(2, 1, 28, 28)
+
     def forward(self, x):
         """
         No special modification required for Lightning, define it as you normally would
